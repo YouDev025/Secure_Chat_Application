@@ -14,6 +14,7 @@ A full-stack secure messaging demo built with React, TypeScript, Express, Socket
 - [Quick Start](#quick-start)
 - [Environment Variables](#environment-variables)
 - [Database Setup](#database-setup)
+- [View Database Tables](#view-database-tables)
 - [Running the App](#running-the-app)
 - [API Reference](#api-reference)
 - [Socket Events](#socket-events)
@@ -252,6 +253,41 @@ Reset local database data:
 cd backend
 npx prisma db push --force-reset
 ```
+
+## View Database Tables
+
+Use Prisma Studio to open a browser-based database viewer for the local PostgreSQL data.
+
+First, make sure PostgreSQL is running:
+
+```bash
+docker compose up -d
+```
+
+If the tables do not exist yet, apply the Prisma schema:
+
+```bash
+cd backend
+npx prisma db push
+```
+
+Then start Prisma Studio:
+
+```bash
+npx prisma studio
+```
+
+Open the URL printed in the terminal, usually:
+
+```text
+http://localhost:5555
+```
+
+You should see the main tables/models:
+
+- `User`
+- `Session`
+- `Message`
 
 ## Running the App
 
