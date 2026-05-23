@@ -1,0 +1,45 @@
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at Object.<anonymous> (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\src\index.ts:115:8)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\node_modules\source-map-support\source-map-support.js:568:25)
+    at Module.m._compile (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:114:20)
+    at require.extensions.<computed> (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:71:20)
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at Object.<anonymous> (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\src\index.ts:115:8)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\node_modules\source-map-support\source-map-support.js:568:25)
+    at Module.m._compile (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:114:20)
+    at require.extensions.<computed> (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:71:20)
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at Object.<anonymous> (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\src\index.ts:135:8)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\node_modules\source-map-support\source-map-support.js:568:25)
+    at Module.m._compile (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:114:20)
+    at require.extensions.<computed> (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:71:20)
+Compilation error in C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\src\controllers\auth.ts
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at Object.<anonymous> (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\src\index.ts:164:8)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1554:14)
+    at Module._compile (C:\Users\Lenov\Desktop\MY-PROJECTS\Secure_Chat_Application\backend\node_modules\source-map-support\source-map-support.js:568:25)
+    at Module.m._compile (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:69:33)
+    at node:internal/modules/cjs/loader:1706:10
+    at require.extensions..jsx.require.extensions..js (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:114:20)
+    at require.extensions.<computed> (C:\Users\Lenov\AppData\Local\Temp\ts-node-dev-hook-10251800031193747.js:71:20)
