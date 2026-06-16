@@ -41,6 +41,7 @@ model Message {
   iv         String   // Initialization Vector for AES
   senderId   String
   receiverId String
+  delivered  Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   sender     User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)

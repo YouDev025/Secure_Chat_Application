@@ -1,0 +1,14 @@
+User 1:
+  Username : alex_morgan92
+  Email    : alex.morgan92@gmail.com
+  Password : Tr0pic@lSunset!
+
+User 2:
+  Username : jamie_thunder
+  Email    : jamie.thunder@outlook.com
+  Password : BlueSky#4829
+
+User 3:
+  Username : nova_writes
+  Email    : nova.writes@yahoo.com
+  Password : W1nt3r$torm99

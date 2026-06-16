@@ -493,6 +493,16 @@ button, input {
   display: block;
 }
 
+.message-bubble.audio-attachment {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.message-bubble.audio-attachment .message-meta {
+  display: none;
+}
+
 .message-bubble.received {
   background: var(--received-message-bg);
   color: var(--received-message-text);
@@ -503,6 +513,10 @@ button, input {
   background: var(--sent-message-bg);
   color: var(--sent-message-text);
   border-bottom-right-radius: 3px;
+}
+
+.message-bubble.audio-attachment.message-bubble.sent {
+  background: transparent;
 }
 
 /* Tails (SVG custom clip path style for maximum realism) */
@@ -533,6 +547,89 @@ button, input {
   line-height: 1.45;
   white-space: pre-wrap;
   display: inline;
+}
+
+.message-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: min(260px, 64vw);
+  max-width: 360px;
+}
+
+.image-only-attachment {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.attachment-preview-link {
+  display: block;
+  color: inherit;
+}
+
+.attachment-image,
+.attachment-video {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.attachment-audio {
+  width: 100%;
+  min-width: 240px;
+}
+
+.attachment-file-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  padding: 8px 0;
+}
+
+.attachment-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  flex-shrink: 0;
+}
+
+.message-bubble.received .attachment-file-icon {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.attachment-file-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attachment-file-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-file-meta {
+  color: inherit;
+  opacity: 0.72;
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .message-bubble.decrypt-failed {
@@ -975,6 +1072,10 @@ button, input {
   color: var(--primary) !important;
 }
 
+.attachment-input {
+  display: none;
+}
+
 /* Sidebar Profile Footer */
 .sidebar-profile {
   display: flex;
@@ -1192,6 +1293,57 @@ button, input {
   display: none;
 }
 
+.profile-image-menu {
+  position: absolute;
+  left: calc(100% + 10px);
+  bottom: 0;
+  width: 190px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown);
+  padding: 4px 0;
+  z-index: 1100;
+  animation: scaleIn 0.15s ease-out;
+}
+
+.profile-image-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.profile-image-menu-item:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.profile-image-menu-item svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.profile-image-menu-item.danger-action {
+  color: var(--error-text);
+}
+
+.profile-image-menu-item.danger-action svg {
+  color: var(--error-text);
+}
+
+.profile-image-menu-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .modal-username {
   font-size: 1.25rem;
   font-weight: 700;
@@ -1347,3 +1499,23 @@ body.light-theme .modal-status-badge.offline {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* Phone number input group with country code */
+.phone-input-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.phone-country-select {
+  width: 125px;
+  flex-shrink: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.phone-number-input {
+  flex: 1;
+}
+

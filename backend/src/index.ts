@@ -6,7 +6,7 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import app from './app';
 import prisma from './lib/prisma';
-import { updateProfile } from './lib/profileStore';
+import { updateProfile, getProfile } from './lib/profileStore';
 
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -66,19 +66,109 @@ const removeConnectedUser = (userId: string, socketId: string) => {
   }
 };
 
+const markMessagesAsDelivered = async (receiverId: string) => {
+  try {
+    const receiverProfile = getProfile(receiverId);
+    const receiverStatus = receiverProfile.status || 'online';
+
+    if (receiverStatus !== 'offline') {
+      const undeliveredMessages = await prisma.message.findMany({
+        where: {
+          receiverId,
+          delivered: false
+        },
+        select: {
+          id: true,
+          senderId: true
+        }
+      });
+
+      if (undeliveredMessages.length > 0) {
+        await prisma.message.updateMany({
+          where: {
+            receiverId,
+            delivered: false
+          },
+          data: {
+            delivered: true
+          }
+        });
+
+        // Group by sender
+        const senderGroups = new Map<string, string[]>();
+        undeliveredMessages.forEach(msg => {
+          const list = senderGroups.get(msg.senderId) || [];
+          list.push(msg.id);
+          senderGroups.set(msg.senderId, list);
+        });
+
+        // Notify senders
+        senderGroups.forEach((messageIds, senderId) => {
+          const senderSocketIds = connectedUsers.get(senderId);
+          if (senderSocketIds) {
+            senderSocketIds.forEach(socketId => {
+              io.to(socketId).emit('messages_delivered', {
+                receiverId,
+                messageIds
+              });
+            });
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error marking messages as delivered:', error);
+  }
+};
+
 io.on('connection', (socket: Socket) => {
   const userId = socket.data.user.userId;
+  const handshakeStatus = socket.handshake.auth.status || 'online';
+
+  // Initialize/update their profile status in profileStore from handshake data
+  updateProfile(userId, {
+    status: handshakeStatus
+  });
+
   addConnectedUser(userId, socket.id);
-  console.log(`User connected: ${socket.id} (User ID: ${userId})`);
+  console.log(`User connected: ${socket.id} (User ID: ${userId}, Status: ${handshakeStatus})`);
+
+  // Broadcast the user's connection status
+  socket.broadcast.emit('user_profile_updated', {
+    userId,
+    status: handshakeStatus
+  });
+
+  // Mark any pending messages as delivered
+  markMessagesAsDelivered(userId);
 
   socket.on('disconnect', () => {
     removeConnectedUser(userId, socket.id);
     console.log(`User disconnected: ${socket.id}`);
+
+    // Check if the user is completely disconnected (no other active connections)
+    const activeSockets = connectedUsers.get(userId);
+    if (!activeSockets || activeSockets.size === 0) {
+      updateProfile(userId, {
+        status: 'offline'
+      });
+      socket.broadcast.emit('user_profile_updated', {
+        userId,
+        status: 'offline'
+      });
+    }
   });
 
   socket.on('send_message', async (data: { receiverId: string; encryptedContent: string; iv: string }) => {
     try {
       const { receiverId, encryptedContent, iv } = data;
+
+      const receiverProfile = getProfile(receiverId);
+      const receiverStatus = receiverProfile.status || 'online';
+      const receiverSocketIds = connectedUsers.get(receiverId);
+
+      // Delivered if receiver is connected AND status is not offline
+      const delivered = Boolean(receiverSocketIds?.size) && receiverStatus !== 'offline';
 
       // Save to database
       const savedMessage = await prisma.message.create({
@@ -87,14 +177,11 @@ io.on('connection', (socket: Socket) => {
           iv: iv,
           senderId: userId,
           receiverId: receiverId,
+          delivered: delivered,
         }
       });
 
-      // Send to receiver if online
-      const receiverSocketIds = connectedUsers.get(receiverId);
-      const delivered = Boolean(receiverSocketIds?.size);
-
-      if (receiverSocketIds) {
+      if (receiverSocketIds && receiverStatus !== 'offline') {
         receiverSocketIds.forEach((receiverSocketId) => {
           io.to(receiverSocketId).emit('receive_message', savedMessage);
         });
@@ -128,6 +215,34 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  socket.on('delete_conversation', async (
+    data: { withUserId: string },
+    callback?: (response: { ok: boolean; error?: string }) => void
+  ) => {
+    try {
+      await prisma.message.deleteMany({
+        where: {
+          OR: [
+            { senderId: userId, receiverId: data.withUserId },
+            { senderId: data.withUserId, receiverId: userId }
+          ]
+        }
+      });
+
+      callback?.({ ok: true });
+
+      const receiverSocketIds = connectedUsers.get(data.withUserId);
+      receiverSocketIds?.forEach((receiverSocketId) => {
+        io.to(receiverSocketId).emit('conversation_deleted', { withUserId: userId });
+      });
+
+      socket.emit('conversation_deleted', { withUserId: data.withUserId });
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      callback?.({ ok: false, error: 'Failed to delete conversation' });
+    }
+  });
+
   socket.on('update_profile', (data: any) => {
     const updatedProfile = updateProfile(userId, {
       username: data.username,
@@ -142,6 +257,10 @@ io.on('connection', (socket: Socket) => {
       userId,
       ...updatedProfile
     });
+
+    if (data.status && data.status !== 'offline') {
+      markMessagesAsDelivered(userId);
+    }
   });
 });
 
