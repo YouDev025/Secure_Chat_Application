@@ -42,9 +42,9 @@
 
 body.light-theme {
   /* Colors for Light Theme (Telegram default light) */
-  --app-bg: #e7ebf0;
+  --app-bg: #ffffff;
   --sidebar-bg: #ffffff;
-  --chat-bg: #e7ebf0;
+  --chat-bg: #ffffff;
   --surface: #f1f5f9;
   --surface-hover: #f5f5f7;
   --surface-active: #2481cc; /* Active item background turns blue */
@@ -74,7 +74,7 @@ body.light-theme {
   --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
   
-  --wallpaper-pattern: radial-gradient(rgba(36, 129, 204, 0.08) 1.5px, transparent 1.5px);
+  --wallpaper-pattern: none;
 }
 
 /* Base Styles */
@@ -127,8 +127,13 @@ button, input {
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.search-container {
+  flex: 1;
+  margin-left: -10px;
 }
 
 .menu-container {
@@ -277,17 +282,21 @@ button, input {
   background: var(--surface-hover);
 }
 
-/* Selected state behavior (matches Telegram) */
+/* Selected state behavior (enhanced contrast) */
 .user-card.active {
   background: var(--surface-active);
+  border-left: 3px solid var(--primary);
+  padding-left: 11px; /* Adjust for border */
 }
 
 .user-card.active .user-name {
   color: #ffffff;
+  font-weight: 600;
 }
 
 .user-card.active .user-status-text {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
 }
 
 /* Custom User Avatars & Initials */
@@ -345,26 +354,40 @@ button, input {
   white-space: nowrap;
 }
 
+/* Standardized Status Indicators */
 .user-status-text {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  font-weight: 400;
   color: var(--text-secondary);
-  margin-top: 2px;
+  margin-top: 1px;
+  line-height: 1.3;
+  text-transform: capitalize;
 }
 
 .user-status-text.online {
   color: #27ae60;
+  font-weight: 500;
 }
 
 .user-status-text.away {
   color: #f2994a;
+  font-weight: 500;
 }
 
 .user-status-text.dnd {
   color: #eb5757;
+  font-weight: 500;
 }
 
 .user-status-text.offline {
   color: var(--text-muted);
+}
+
+/* Standardized status dot size */
+.user-card .status-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
 }
 
 /* Chat Area */
@@ -470,7 +493,7 @@ button, input {
 .message-bubble-wrapper {
   display: flex;
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .message-bubble-wrapper.sent {
@@ -485,12 +508,17 @@ button, input {
   position: relative;
   max-width: min(72%, 620px);
   min-width: 72px;
-  padding: 6px 58px 18px 12px;
+  padding: 6px 86px 18px 12px;
   border-radius: 12px;
   box-shadow: var(--shadow-soft);
   word-break: break-word;
   animation: bubbleSlideIn 0.2s ease-out;
   display: block;
+}
+
+/* Ensure meta and reaction icons are visible and not clipped */
+.message-bubble {
+  overflow: visible;
 }
 
 .message-bubble.audio-attachment {
@@ -584,13 +612,122 @@ button, input {
   min-width: 240px;
 }
 
-.attachment-file-link {
+/* Compact Voice Message Player (WhatsApp/Telegram style) */
+.custom-audio-player {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: inherit;
-  text-decoration: none;
-  padding: 8px 0;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--audio-bg);
+  color: var(--text-primary);
+  min-width: 220px;
+  max-width: 300px;
+}
+
+.audio-play-btn {
+  border: none;
+  background: var(--surface);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.2s;
+}
+
+.audio-play-btn:hover {
+  background: var(--primary-hover);
+  transform: scale(1.08);
+}
+
+.audio-play-btn:active {
+  transform: scale(0.95);
+}
+
+.audio-waveform {
+  flex: 1;
+  height: 24px;
+  background: transparent;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Waveform visual bars */
+.audio-waveform::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--audio-wave-color) 0px,
+    var(--audio-wave-color) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.audio-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: width 0.1s linear;
+}
+
+/* Audio player inside sent messages */
+.message-bubble.sent .custom-audio-player {
+  background: var(--audio-bg);
+}
+
+/* Audio player inside received messages */
+.message-bubble.received .custom-audio-player {
+  background: var(--audio-bg);
+}
+
+/* Audio playing state */
+.custom-audio-player.playing {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.custom-audio-player.playing .audio-play-btn {
+  background: #ffffff33;
+  color: #ffffff;
+}
+
+.custom-audio-player.unplayed .audio-play-btn {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+:root {
+  --audio-bg: #1d2430;
+  --audio-wave-color: #7f91a4;
+}
+
+body.light-theme {
+  --audio-bg: #e8eaed;
+  --audio-wave-color: #9ba6b2;
 }
 
 .attachment-file-icon {
@@ -1049,7 +1186,7 @@ button, input {
 .emoji-btn {
   background: transparent;
   border: none;
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   padding: 4px;
   cursor: pointer;
   border-radius: var(--radius-sm);
@@ -1063,6 +1200,42 @@ button, input {
   background-color: var(--surface-hover);
   transform: scale(1.15);
 }
+
+/* General reaction sizing for in-message reactions */
+.message-reaction, .reaction-bubble {
+  font-size: 0.9rem;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Quiz / Poll Card Styles */
+.quiz-card {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid var(--border-color);
+  max-width: min(68%, 560px);
+}
+.quiz-card.received { background: var(--surface); }
+.quiz-card.sent { background: var(--sent-message-bg); color: var(--sent-message-text); }
+.quiz-question { font-weight: 600; margin-bottom: 8px; }
+.quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.quiz-option { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; transition: background 0.12s, border-color 0.12s; border: 1px solid transparent; }
+.quiz-option:hover { background: var(--surface-hover); }
+.quiz-option input { appearance: none; width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border-color); background: transparent; }
+.quiz-option input:checked { background: var(--primary); border-color: var(--primary); }
+.quiz-option-label { font-size: 0.95rem; }
+.quiz-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.quiz-submit { padding: 8px 14px; }
+.quiz-correct-badge { margin-left: 8px; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 999px; font-size: 0.72rem; }
+
+/* Make sure message meta (time/status) doesn't get clipped at edges */
+.message-meta { right: 12px; bottom: 6px; }
 
 .emoji-btn:active {
   transform: scale(0.95);

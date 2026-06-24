@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { encryptMessage, decryptMessage } from '../utils/crypto';
 import { countries } from '../utils/countries';
+import AudioMessagePlayerExample from './AudioMessagePlayer.example';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -89,6 +90,17 @@ const parseAttachmentPayload = (text?: string): AttachmentPayload | null => {
     return null;
   }
 
+  return null;
+};
+
+const parseQuizPayload = (text?: string) => {
+  if (!text) return null;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed?.kind === 'quiz' && typeof parsed.question === 'string' && Array.isArray(parsed.options)) {
+      return parsed as { kind: 'quiz'; question: string; options: string[]; correct?: number };
+    }
+  } catch {}
   return null;
 };
 
@@ -872,7 +884,7 @@ const Chat: React.FC = () => {
       ctx.fillStyle = 'rgba(0,0,0,0)';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#ff4d4f';
+      ctx.strokeStyle = '#bfe6ff';
       ctx.beginPath();
       const sliceWidth = canvas.width / bufferLength;
       let x = 0;
@@ -921,6 +933,8 @@ const Chat: React.FC = () => {
     const [current, setCurrent] = useState(0);
     const [duration, setDuration] = useState(0);
     const rafRef = useRef<number | null>(null);
+
+    const formatSeconds = (s: number) => new Date(Math.max(0, Math.floor(s)) * 1000).toISOString().substr(14, 5);
 
     useEffect(() => {
       const a = new Audio(src);
@@ -977,16 +991,14 @@ const Chat: React.FC = () => {
     };
 
     return (
-      <div className={`custom-audio-player ${isSent ? 'sent' : 'received'}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 24, background: isSent ? '#bfdca2' : '#f2f7fb', color: 'var(--text)', minWidth: 200, maxWidth: 320 }}>
-        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} style={{ border: 'none', background: 'transparent', padding: 6, display: 'flex', alignItems: 'center' }}>
+      <div className={`custom-audio-player ${isSent ? 'sent' : 'received'} ${playing ? 'playing' : 'unplayed'}`}>
+        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="audio-play-btn">
           {playing ? <Pause size={18} /> : <Play size={18} />}
         </button>
 
-        <div onClick={seek} style={{ flex: 1, height: 6, background: 'transparent', borderRadius: 6, position: 'relative', cursor: 'pointer' }}>
-          <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: `${(current / (duration || 1)) * 100}%`, height: 6, background: isSent ? '#2b8ed7' : '#1866e0', borderRadius: 6 }} />
+        <div className="audio-waveform" onClick={seek} role="progressbar" aria-valuemin={0} aria-valuemax={Math.floor(duration)} aria-valuenow={Math.floor(current)}>
+          <div className="audio-progress" style={{ width: `${(current / (duration || 1)) * 100}%` }} />
         </div>
-
-        <div style={{ fontSize: '0.85rem', minWidth: 40, textAlign: 'right' }}>{new Date((duration ? Math.floor(current) : 0) * 1000).toISOString().substr(14, 5)}</div>
       </div>
     );
   };
@@ -996,7 +1008,7 @@ const Chat: React.FC = () => {
     const isVideo = attachment.mimeType.startsWith('video/');
     const isAudio = attachment.mimeType.startsWith('audio/');
 
-    if (isAudio) {
+      if (isAudio) {
       return <AudioPlayer src={attachment.dataUrl} isSent={isSent} />;
     }
 
@@ -1025,6 +1037,45 @@ const Chat: React.FC = () => {
             </span>
           </a>
         )}
+      </div>
+    );
+  };
+
+  const QuizCard: React.FC<{ payload: { question: string; options: string[]; correct?: number }; isSent?: boolean; messageId: string }> = ({ payload, isSent, messageId }) => {
+    const [selected, setSelected] = useState<number | null>(null);
+    const [submitted, setSubmitted] = useState(false);
+
+    const handleSubmitAnswer = () => {
+      if (selected == null) return;
+      setSubmitted(true);
+      if (socket) {
+        socket.emit('submit_quiz_answer', { messageId, answerIndex: selected });
+      }
+    };
+
+    return (
+      <div className={`quiz-card ${isSent ? 'sent' : 'received'}`}>
+        <div className="quiz-question">{payload.question}</div>
+        <div className="quiz-options">
+          {payload.options.map((opt, idx) => (
+            <label key={idx} className={`quiz-option ${submitted && payload.correct === idx ? 'correct' : ''}`}>
+              <input
+                type="radio"
+                name={`quiz_${messageId}`}
+                checked={selected === idx}
+                onChange={() => setSelected(idx)}
+                disabled={submitted}
+              />
+              <span className="quiz-option-label">{opt}</span>
+              {submitted && payload.correct === idx && <span className="quiz-correct-badge">Correct Answer</span>}
+            </label>
+          ))}
+        </div>
+        <div className="quiz-actions">
+          <button type="button" className="auth-btn quiz-submit" onClick={handleSubmitAnswer} disabled={submitted || selected == null}>
+            {submitted ? 'Submitted' : 'Submit Answer'}
+          </button>
+        </div>
       </div>
     );
   };
@@ -1076,12 +1127,14 @@ const Chat: React.FC = () => {
               }}
               className={`user-card ${selectedUser?.id === u.id ? 'active' : ''}`}
             >
-              {renderAvatar(u)}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                {renderAvatar(u)}
+              </div>
               <div className="user-info-wrapper">
                 <div className="user-name">{u.username}</div>
-                <div className="user-status-text-container" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                  <span className={`status-dot ${u.status || 'online'}`} style={{ width: '6px', height: '6px' }} />
-                  <span className={`user-status-text ${u.status || 'online'}`} style={{ fontSize: '0.78rem', marginTop: 0 }}>
+                <div className="user-status-text-container" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '1px' }}>
+                  <span className={`status-dot ${u.status || 'online'}`} />
+                  <span className={`user-status-text ${u.status || 'online'}`}>
                     {u.status || 'online'}
                   </span>
                 </div>
@@ -1257,6 +1310,9 @@ const Chat: React.FC = () => {
                   <div className="empty-state-shield"><Shield size={42} /></div>
                   <h3>End-to-End Encrypted Chat</h3>
                   <p>Your messages are protected. Start the secure conversation with {selectedUser.username}.</p>
+                  <div style={{ marginTop: 12 }}>
+                    <AudioMessagePlayerExample />
+                  </div>
                 </div>
               ) : null}
 
@@ -1267,13 +1323,16 @@ const Chat: React.FC = () => {
                 return (
                   <div key={msg.id} className={`message-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
                     <div className={`message-bubble ${isSent ? 'sent' : 'received'} ${isAudioMessage ? 'audio-attachment' : ''} ${!msg.decryptedText ? 'decrypt-failed' : ''}`}>
-                      {attachment ? (
-                        renderAttachment(attachment, isSent)
-                      ) : (
-                        <span className="message-content-text">
-                          {msg.decryptedText || 'Encrypted payload unavailable'}
-                        </span>
-                      )}
+                      {(() => {
+                        const quizPayload = parseQuizPayload(msg.decryptedText);
+                        if (quizPayload) return <QuizCard payload={quizPayload} isSent={isSent} messageId={msg.id} />;
+                        if (attachment) return renderAttachment(attachment, isSent);
+                        return (
+                          <span className="message-content-text">
+                            {msg.decryptedText || 'Encrypted payload unavailable'}
+                          </span>
+                        );
+                      })()}
                       {!isAudioMessage && (
                         <span className="message-meta">
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
@@ -1306,7 +1365,7 @@ const Chat: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <form className="chat-footer" onSubmit={(e) => { e.preventDefault(); sendTextMessage(); }}>
+              <form className="chat-footer" onSubmit={handleSendMessage}>
                 <div className="input-pill" style={{ position: 'relative' }}>
                   <div ref={emojiPickerRef} style={{ display: 'flex', alignItems: 'center' }}>
                     <button 

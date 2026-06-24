@@ -1,0 +1,97 @@
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  min-width: 220px;
+}
+
+.play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--play-bg) 0%, rgba(255,255,255,0.02) 100%);
+  color: var(--play-ico);
+  cursor: pointer;
+  flex: 0 0 48px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  box-shadow: 0 2px 6px rgba(16,24,40,0.06);
+}
+
+.play-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16,24,40,0.08); }
+.play-btn:active { transform: translateY(0); }
+.play-btn:focus { outline: 3px solid rgba(59,130,246,0.18); outline-offset: 2px; }
+
+.waveform {
+  display: flex;
+  align-items: end;
+  gap: 6px;
+  width: 100%;
+  height: 56px;
+  padding-right: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle dotted background */
+.waveform::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 1px, transparent 1px);
+  background-size: 10px 10px;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.wave-bar {
+  width: 4px;
+  background: var(--wave-inactive);
+  border-radius: 4px;
+  transition: background 180ms cubic-bezier(.2,.9,.2,1), transform 220ms ease, opacity 180ms ease;
+  align-self: flex-end;
+  transform-origin: center bottom;
+}
+
+.wave-bar.inactive { opacity: 0.95; transform: scaleY(0.98); }
+.wave-bar.muted { background: var(--wave-muted); opacity: 0.8; transform: scaleY(0.98); }
+.wave-bar.filled {
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2, var(--accent)) 100%);
+  opacity: 1;
+  transform: scaleY(1.08);
+  box-shadow: 0 4px 10px rgba(59,130,246,0.12);
+}
+
+:root {
+  --bg: #F5F6F8;
+  --card-bg: #FFFFFF;
+  --card-shadow: 0 1px 2px rgba(20,20,30,0.04);
+  --play-bg: #E9EDF6;
+  --play-ico: #1A1A1A;
+  --accent: #3B82F6;
+  --accent-2: #286FDB;
+  --wave-inactive: #C7CAD1;
+  --wave-muted: #E6E9EF;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0B0F1A;
+    --card-bg: linear-gradient(180deg,#111421 0%, #151826 100%);
+    --card-shadow: 0 6px 18px rgba(2,6,23,0.6);
+    --play-bg: #23283A;
+    --play-ico: #FFFFFF;
+    --accent: #4D8DFF;
+    --accent-2: #3B6EF6;
+    --wave-inactive: #2E3446;
+    --wave-muted: rgba(255,255,255,0.06);
+  }
+  .waveform::before { opacity: 0.12; background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 1px); }
+}
