@@ -35,9 +35,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedToken = localUser && localToken ? localToken : sessionToken;
 
     if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-      setAuthStorage(localUser && localToken ? localStorage : sessionStorage);
+      try {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+        setAuthStorage(localUser && localToken ? localStorage : sessionStorage);
+      } catch (err) {
+        console.error('Failed to parse stored user session:', err);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+      }
     }
   }, []);
 

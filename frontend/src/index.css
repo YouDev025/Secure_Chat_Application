@@ -522,13 +522,8 @@ button, input {
 }
 
 .message-bubble.audio-attachment {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-}
-
-.message-bubble.audio-attachment .message-meta {
-  display: none;
+  padding: 8px 86px 8px 12px;
+  min-width: 260px;
 }
 
 .message-bubble.received {
@@ -543,9 +538,7 @@ button, input {
   border-bottom-right-radius: 3px;
 }
 
-.message-bubble.audio-attachment.message-bubble.sent {
-  background: transparent;
-}
+
 
 /* Tails (SVG custom clip path style for maximum realism) */
 .message-bubble.received::before {
@@ -612,122 +605,164 @@ button, input {
   min-width: 240px;
 }
 
-/* Compact Voice Message Player (WhatsApp/Telegram style) */
-.custom-audio-player {
+/* Telegram-like Audio Message Player */
+.telegram-audio-player {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 6px 0;
   border-radius: 12px;
-  background: var(--audio-bg);
-  color: var(--text-primary);
-  min-width: 220px;
-  max-width: 300px;
+  min-width: 200px;
+  max-width: 320px;
+  user-select: none;
+  background: transparent;
 }
 
-.audio-play-btn {
-  border: none;
-  background: var(--surface);
-  padding: 4px;
+/* Play/Pause Button */
+.tg-audio-play-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: #ffffff;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  border: none;
+  cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.15s, background 0.2s;
+  transition: transform 0.1s, background-color 0.2s, color 0.2s;
 }
 
-.audio-play-btn:hover {
-  background: var(--primary-hover);
-  transform: scale(1.08);
+.tg-audio-play-btn:hover {
+  transform: scale(1.05);
 }
 
-.audio-play-btn:active {
+.tg-audio-play-btn:active {
   transform: scale(0.95);
 }
 
-.audio-waveform {
-  flex: 1;
-  height: 24px;
-  background: transparent;
-  border-radius: 4px;
-  position: relative;
-  cursor: pointer;
+/* Audio Content */
+.tg-audio-content {
   display: flex;
-  align-items: center;
-  overflow: hidden;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
 }
 
-/* Waveform visual bars */
-.audio-waveform::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 100%;
-  height: 4px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--audio-wave-color) 0px,
-    var(--audio-wave-color) 2px,
-    transparent 2px,
-    transparent 4px
-  );
-  border-radius: 2px;
-  opacity: 0.6;
+/* Waveform Container */
+.tg-audio-waveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+  cursor: pointer;
+  padding: 2px 0;
 }
 
-.audio-progress {
-  position: absolute;
-  left: 0;
-  top: 0;
+/* Wavebar styling */
+.tg-wave-bar {
+  flex: 1;
+  width: 2px;
+  min-width: 2px;
+  border-radius: 1px;
+  transition: background-color 0.1s ease;
   height: 100%;
-  width: 0%;
-  background: var(--primary);
-  border-radius: 4px;
-  opacity: 0.7;
-  transition: width 0.1s linear;
 }
 
-/* Audio player inside sent messages */
-.message-bubble.sent .custom-audio-player {
-  background: var(--audio-bg);
+/* Time Indicator */
+.tg-audio-time {
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
-/* Audio player inside received messages */
-.message-bubble.received .custom-audio-player {
-  background: var(--audio-bg);
-}
-
-/* Audio playing state */
-.custom-audio-player.playing {
-  background: var(--primary);
-  color: #ffffff;
-}
-
-.custom-audio-player.playing .audio-play-btn {
-  background: #ffffff33;
-  color: #ffffff;
-}
-
-.custom-audio-player.unplayed .audio-play-btn {
-  background: var(--surface);
+/* Dark Theme (Default) Styles */
+.message-bubble.received .telegram-audio-player {
   color: var(--text-primary);
 }
 
-:root {
-  --audio-bg: #1d2430;
-  --audio-wave-color: #7f91a4;
+.message-bubble.received .tg-audio-play-btn {
+  background: var(--primary);
+  color: #ffffff;
 }
 
-body.light-theme {
-  --audio-bg: #e8eaed;
-  --audio-wave-color: #9ba6b2;
+.message-bubble.received .tg-audio-play-btn:hover {
+  background: var(--primary-hover);
+}
+
+.message-bubble.received .tg-wave-bar.active {
+  background-color: var(--primary);
+}
+
+.message-bubble.received .tg-wave-bar.inactive {
+  background-color: #43566b;
+}
+
+.message-bubble.received .tg-audio-time {
+  color: var(--text-secondary);
+}
+
+.message-bubble.sent .telegram-audio-player {
+  color: var(--sent-message-text);
+}
+
+.message-bubble.sent .tg-audio-play-btn {
+  background: #ffffff;
+  color: var(--sent-message-bg);
+}
+
+.message-bubble.sent .tg-wave-bar.active {
+  background-color: #ffffff;
+}
+
+.message-bubble.sent .tg-wave-bar.inactive {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.message-bubble.sent .tg-audio-time {
+  color: var(--sent-meta);
+}
+
+/* Light Theme Styles */
+body.light-theme .message-bubble.received .tg-audio-play-btn {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+body.light-theme .message-bubble.received .tg-audio-play-btn:hover {
+  background: var(--primary-hover);
+}
+
+body.light-theme .message-bubble.received .tg-wave-bar.active {
+  background-color: var(--primary);
+}
+
+body.light-theme .message-bubble.received .tg-wave-bar.inactive {
+  background-color: #d1d7db;
+}
+
+body.light-theme .message-bubble.received .tg-audio-time {
+  color: var(--text-secondary);
+}
+
+body.light-theme .message-bubble.sent .tg-audio-play-btn {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+body.light-theme .message-bubble.sent .tg-audio-play-btn:hover {
+  background: var(--primary-hover);
+}
+
+body.light-theme .message-bubble.sent .tg-wave-bar.active {
+  background-color: #5fae4e;
+}
+
+body.light-theme .message-bubble.sent .tg-wave-bar.inactive {
+  background-color: rgba(95, 174, 78, 0.35);
+}
+
+body.light-theme .message-bubble.sent .tg-audio-time {
+  color: var(--sent-meta);
 }
 
 .attachment-file-icon {

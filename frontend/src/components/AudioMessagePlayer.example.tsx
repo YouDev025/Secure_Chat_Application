@@ -1,4 +1,3 @@
-import React from 'react'
 import AudioMessagePlayer from './AudioMessagePlayer'
 
 export default function AudioMessagePlayerExample() {

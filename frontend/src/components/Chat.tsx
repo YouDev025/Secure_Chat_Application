@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Shield, Search, MoreVertical, LogOut, Moon, Sun, Menu, Smile, Paperclip, Mic, Check, CheckCheck, ArrowLeft, VolumeX, Volume2, Ban, AlertTriangle, Settings, X, Camera, Trash2, ImagePlus, ImageOff, FileText, Download, Play, Pause } from 'lucide-react';
+import { Send, Shield, Search, MoreVertical, LogOut, Moon, Sun, Menu, Smile, Paperclip, Mic, Check, CheckCheck, ArrowLeft, VolumeX, Volume2, Ban, AlertTriangle, Settings, X, Camera, Trash2, ImagePlus, ImageOff, FileText } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -38,7 +38,7 @@ interface AttachmentPayload {
   dataUrl: string;
 }
 
-const MAX_ATTACHMENT_SIZE = 8 * 1024 * 1024;
+const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
 
 const getUnreadCountsStorageKey = (userId: string) => `unreadCounts_${userId}`;
 const getLocalDeletedChatsStorageKey = (userId: string) => `localDeletedChats_${userId}`;
@@ -207,7 +207,12 @@ const Chat: React.FC = () => {
 
     // Save to global user profiles map in localStorage
     const savedProfiles = localStorage.getItem('global_user_profiles');
-    const profilesMap = savedProfiles ? JSON.parse(savedProfiles) : {};
+    let profilesMap: Record<string, any> = {};
+    try {
+      profilesMap = savedProfiles ? JSON.parse(savedProfiles) : {};
+    } catch (err) {
+      console.error('Failed to parse global user profiles:', err);
+    }
     profilesMap[user!.id] = updatedFields;
     localStorage.setItem('global_user_profiles', JSON.stringify(profilesMap));
 
@@ -254,8 +259,20 @@ const Chat: React.FC = () => {
     if (user?.id) {
       const savedMute = localStorage.getItem(`mutedUsers_${user.id}`);
       const savedBlock = localStorage.getItem(`blockedUsers_${user.id}`);
-      if (savedMute) setMutedUsers(JSON.parse(savedMute));
-      if (savedBlock) setBlockedUsers(JSON.parse(savedBlock));
+      if (savedMute) {
+        try {
+          setMutedUsers(JSON.parse(savedMute));
+        } catch (err) {
+          console.error('Failed to parse muted users:', err);
+        }
+      }
+      if (savedBlock) {
+        try {
+          setBlockedUsers(JSON.parse(savedBlock));
+        } catch (err) {
+          console.error('Failed to parse blocked users:', err);
+        }
+      }
     }
   }, [user?.id]);
 
@@ -509,7 +526,12 @@ const Chat: React.FC = () => {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => {
       const savedProfiles = localStorage.getItem('global_user_profiles');
-      const profilesMap = savedProfiles ? JSON.parse(savedProfiles) : {};
+      let profilesMap: Record<string, any> = {};
+      try {
+        profilesMap = savedProfiles ? JSON.parse(savedProfiles) : {};
+      } catch (err) {
+        console.error('Failed to parse global user profiles:', err);
+      }
       const enrichedUsers = res.data.map((u: User) => {
         const cached = profilesMap[u.id] || {};
         return { ...cached, ...u };
@@ -642,7 +664,12 @@ const Chat: React.FC = () => {
       });
 
       const savedProfiles = localStorage.getItem('global_user_profiles');
-      const profilesMap = savedProfiles ? JSON.parse(savedProfiles) : {};
+      let profilesMap: Record<string, any> = {};
+      try {
+        profilesMap = savedProfiles ? JSON.parse(savedProfiles) : {};
+      } catch (err) {
+        console.error('Failed to parse global user profiles:', err);
+      }
       profilesMap[updatedProfile.userId] = updatedProfile;
       localStorage.setItem('global_user_profiles', JSON.stringify(profilesMap));
     });
@@ -707,34 +734,37 @@ const Chat: React.FC = () => {
   };
 
   const handleAttachmentChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = e.target.files;
     e.target.value = '';
-    if (!file || !selectedUser || !socket || !user) return;
+    if (!files || files.length === 0 || !selectedUser || !socket || !user) return;
 
-    if (file.size > MAX_ATTACHMENT_SIZE) {
-      alert(`Please choose a file smaller than ${formatFileSize(MAX_ATTACHMENT_SIZE)}.`);
-      return;
-    }
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > MAX_ATTACHMENT_SIZE) {
+        alert(`File "${file.name}" is larger than ${formatFileSize(MAX_ATTACHMENT_SIZE)}. Please choose files smaller than ${formatFileSize(MAX_ATTACHMENT_SIZE)}.`);
+        continue;
+      }
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const payload: AttachmentPayload = {
-        kind: 'attachment',
-        name: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        size: file.size,
-        dataUrl
-      };
-      const { encrypted, iv } = await encryptMessage(JSON.stringify(payload), user.id, selectedUser.id);
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        const payload: AttachmentPayload = {
+          kind: 'attachment',
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          size: file.size,
+          dataUrl
+        };
+        const { encrypted, iv } = await encryptMessage(JSON.stringify(payload), user.id, selectedUser.id);
 
-      socket.emit('send_message', {
-        receiverId: selectedUser.id,
-        encryptedContent: encrypted,
-        iv
-      });
-    } catch (error) {
-      console.error('Failed to send attachment', error);
-      alert('Failed to send this file.');
+        socket.emit('send_message', {
+          receiverId: selectedUser.id,
+          encryptedContent: encrypted,
+          iv
+        });
+      } catch (error) {
+        console.error('Failed to send attachment', error);
+        alert(`Failed to send file "${file.name}".`);
+      }
     }
   };
 
@@ -932,9 +962,26 @@ const Chat: React.FC = () => {
     const [playing, setPlaying] = useState(false);
     const [current, setCurrent] = useState(0);
     const [duration, setDuration] = useState(0);
-    const rafRef = useRef<number | null>(null);
+    const waveformRef = useRef<HTMLDivElement>(null);
+    
+    // Seeded wave heights to make it look like a real audio message waveform
+    const [waveHeights] = useState(() => {
+      const heights: number[] = [];
+      let state = 98765; // fixed seed
+      for (let i = 0; i < 35; i++) {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        const h = 25 + (state % 65); // heights between 25% and 90%
+        heights.push(h);
+      }
+      return heights;
+    });
 
-    const formatSeconds = (s: number) => new Date(Math.max(0, Math.floor(s)) * 1000).toISOString().substr(14, 5);
+    const formatTime = (s: number) => {
+      if (isNaN(s) || s === Infinity) return '0:00';
+      const mins = Math.floor(s / 60);
+      const secs = Math.floor(s % 60);
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    };
 
     useEffect(() => {
       const a = new Audio(src);
@@ -942,25 +989,29 @@ const Chat: React.FC = () => {
       audioRef.current = a;
 
       const onLoaded = () => setDuration(a.duration || 0);
-      const onEnded = () => setPlaying(false);
+      const onEnded = () => {
+        setPlaying(false);
+        setCurrent(0);
+      };
+      const onTimeUpdate = () => {
+        setCurrent(a.currentTime || 0);
+      };
+
       a.addEventListener('loadedmetadata', onLoaded);
       a.addEventListener('ended', onEnded);
+      a.addEventListener('timeupdate', onTimeUpdate);
+
+      // Trigger load manually to guarantee metadata retrieves in all browsers
+      a.load();
 
       return () => {
         a.pause();
         a.removeEventListener('loadedmetadata', onLoaded);
         a.removeEventListener('ended', onEnded);
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        a.removeEventListener('timeupdate', onTimeUpdate);
         audioRef.current = null;
       };
     }, [src]);
-
-    const update = () => {
-      const a = audioRef.current;
-      if (!a) return;
-      setCurrent(a.currentTime || 0);
-      rafRef.current = requestAnimationFrame(update);
-    };
 
     const toggle = async () => {
       const a = audioRef.current;
@@ -968,36 +1019,92 @@ const Chat: React.FC = () => {
       if (playing) {
         a.pause();
         setPlaying(false);
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
       } else {
         try {
           await a.play();
           setPlaying(true);
-          rafRef.current = requestAnimationFrame(update);
         } catch (err) {
           console.error('Play failed', err);
         }
       }
     };
 
-    const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleSeek = (clientX: number) => {
       const a = audioRef.current;
-      if (!a) return;
-      const rect = (e.target as HTMLDivElement).getBoundingClientRect();
-      const x = e.clientX - rect.left;
+      const waveform = waveformRef.current;
+      if (!a || !waveform || !duration) return;
+      const rect = waveform.getBoundingClientRect();
+      const x = clientX - rect.left;
       const pct = Math.max(0, Math.min(1, x / rect.width));
-      a.currentTime = pct * (duration || 0);
+      a.currentTime = pct * duration;
       setCurrent(a.currentTime);
     };
 
+    const handleMouseDown = (e: React.MouseEvent) => {
+      handleSeek(e.clientX);
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        handleSeek(moveEvent.clientX);
+      };
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+      handleSeek(e.touches[0].clientX);
+      const handleTouchMove = (moveEvent: TouchEvent) => {
+        handleSeek(moveEvent.touches[0].clientX);
+      };
+      const handleTouchEnd = () => {
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+      document.addEventListener('touchmove', handleTouchMove);
+      document.addEventListener('touchend', handleTouchEnd);
+    };
+
+    const progressPct = duration ? (current / duration) : 0;
+    const activeBarIndex = Math.floor(progressPct * waveHeights.length);
+
     return (
-      <div className={`custom-audio-player ${isSent ? 'sent' : 'received'} ${playing ? 'playing' : 'unplayed'}`}>
-        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="audio-play-btn">
-          {playing ? <Pause size={18} /> : <Play size={18} />}
+      <div className={`telegram-audio-player ${isSent ? 'sent' : 'received'} ${playing ? 'playing' : 'paused'}`}>
+        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="tg-audio-play-btn">
+          {playing ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="5" y="4" width="4" height="16" rx="1" />
+              <rect x="15" y="4" width="4" height="16" rx="1" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: '2px' }}>
+              <path d="M8 5v14l11-7L8 5z" />
+            </svg>
+          )}
         </button>
 
-        <div className="audio-waveform" onClick={seek} role="progressbar" aria-valuemin={0} aria-valuemax={Math.floor(duration)} aria-valuenow={Math.floor(current)}>
-          <div className="audio-progress" style={{ width: `${(current / (duration || 1)) * 100}%` }} />
+        <div className="tg-audio-content">
+          <div 
+            className="tg-audio-waveform" 
+            ref={waveformRef}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+          >
+            {waveHeights.map((h, idx) => {
+              const isActive = idx <= activeBarIndex;
+              return (
+                <div 
+                  key={idx} 
+                  className={`tg-wave-bar ${isActive ? 'active' : 'inactive'}`} 
+                  style={{ height: `${h}%` }}
+                />
+              );
+            })}
+          </div>
+          <div className="tg-audio-time">
+            {playing || current > 0 ? formatTime(current) : formatTime(duration || 0)}
+          </div>
         </div>
       </div>
     );
@@ -1008,7 +1115,7 @@ const Chat: React.FC = () => {
     const isVideo = attachment.mimeType.startsWith('video/');
     const isAudio = attachment.mimeType.startsWith('audio/');
 
-      if (isAudio) {
+    if (isAudio) {
       return <AudioPlayer src={attachment.dataUrl} isSent={isSent} />;
     }
 
@@ -1020,23 +1127,25 @@ const Chat: React.FC = () => {
       );
     }
 
+    if (isVideo) {
+      return (
+        <div className="message-attachment">
+          <video src={attachment.dataUrl} controls className="attachment-video" />
+        </div>
+      );
+    }
+
     return (
       <div className="message-attachment">
-        {isVideo && (
-          <video src={attachment.dataUrl} controls className="attachment-video" />
-        )}
-
-        {!isAudio && !isImage && (
-          <a href={attachment.dataUrl} download={attachment.name} className="attachment-file-link">
-            <span className="attachment-file-icon">
-              {isVideo ? <Download size={18} /> : <FileText size={18} />}
-            </span>
-            <span className="attachment-file-details">
-              <span className="attachment-file-name">{attachment.name}</span>
-              <span className="attachment-file-meta">{formatFileSize(attachment.size)} · {attachment.mimeType}</span>
-            </span>
-          </a>
-        )}
+        <a href={attachment.dataUrl} download={attachment.name} className="attachment-file-link">
+          <span className="attachment-file-icon">
+            <FileText size={18} />
+          </span>
+          <span className="attachment-file-details">
+            <span className="attachment-file-name">{attachment.name}</span>
+            <span className="attachment-file-meta">{formatFileSize(attachment.size)} · {attachment.mimeType}</span>
+          </span>
+        </a>
       </div>
     );
   };
@@ -1333,20 +1442,18 @@ const Chat: React.FC = () => {
                           </span>
                         );
                       })()}
-                      {!isAudioMessage && (
-                        <span className="message-meta">
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                          {isSent && (
-                            <span className="message-status-icon">
-                              {msg.delivered ? (
-                                <CheckCheck size={13} />
-                              ) : (
-                                <Check size={13} />
-                              )}
-                            </span>
-                          )}
-                        </span>
-                      )}
+                      <span className="message-meta">
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                        {isSent && (
+                          <span className="message-status-icon">
+                            {msg.delivered ? (
+                              <CheckCheck size={13} />
+                            ) : (
+                              <Check size={13} />
+                            )}
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 );
@@ -1406,6 +1513,7 @@ const Chat: React.FC = () => {
                     type="file"
                     onChange={handleAttachmentChange}
                     className="attachment-input"
+                    multiple
                   />
                   <button
                     type="button"
