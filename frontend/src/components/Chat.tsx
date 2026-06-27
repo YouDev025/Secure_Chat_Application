@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { encryptMessage, decryptMessage } from '../utils/crypto';
 import { countries } from '../utils/countries';
 import AudioMessagePlayerExample from './AudioMessagePlayer.example';
+import { SecureMedia } from './SecureMedia';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
@@ -65,12 +66,7 @@ const readLocalDeletedChats = (userId?: string): Record<string, string> => {
   }
 };
 
-const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result));
-  reader.onerror = () => reject(reader.error);
-  reader.readAsDataURL(file);
-});
+
 
 const parseAttachmentPayload = (text?: string): AttachmentPayload | null => {
   if (!text) return null;
@@ -166,6 +162,7 @@ const Chat: React.FC = () => {
   const [showDeleteChatModal, setShowDeleteChatModal] = useState(false);
   const [alsoDeleteForReceiver, setAlsoDeleteForReceiver] = useState(false);
   const [showProfileImageMenu, setShowProfileImageMenu] = useState(false);
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
 
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -733,58 +730,93 @@ const Chat: React.FC = () => {
     setInputText('');
   };
 
+  const openAttachmentPicker = () => {
+    if (isUploadingAttachments) return;
+
+    if (!selectedUser) {
+      alert('Select a chat before sending files.');
+      return;
+    }
+
+    attachmentInputRef.current?.click();
+  };
+
   const handleAttachmentChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     e.target.value = '';
-    if (!files || files.length === 0 || !selectedUser || !socket || !user) return;
+    if (!files || files.length === 0 || !selectedUser || !socket || !user || !token) return;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.size > MAX_ATTACHMENT_SIZE) {
-        alert(`File "${file.name}" is larger than ${formatFileSize(MAX_ATTACHMENT_SIZE)}. Please choose files smaller than ${formatFileSize(MAX_ATTACHMENT_SIZE)}.`);
-        continue;
+    setIsUploadingAttachments(true);
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+          alert(`File "${file.name}" is larger than ${formatFileSize(MAX_ATTACHMENT_SIZE)}. Please choose files smaller than ${formatFileSize(MAX_ATTACHMENT_SIZE)}.`);
+          continue;
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const response = await axios.post(`${BACKEND_URL}/api/upload/upload`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          const { fileId, name, mimeType, size } = response.data;
+
+          const payload: AttachmentPayload = {
+            kind: 'attachment',
+            name,
+            mimeType,
+            size,
+            dataUrl: `${BACKEND_URL}/api/upload/download/${fileId}`
+          };
+          const { encrypted, iv } = await encryptMessage(JSON.stringify(payload), user.id, selectedUser.id);
+
+          socket.emit('send_message', {
+            receiverId: selectedUser.id,
+            encryptedContent: encrypted,
+            iv
+          });
+        } catch (error: any) {
+          console.error('Failed to send attachment', error);
+          const errorMsg = error.response?.data?.error || error.response?.data?.details || '';
+          alert(`Failed to send file "${file.name}". ${errorMsg}`);
+        }
       }
-
-      try {
-        const dataUrl = await readFileAsDataUrl(file);
-        const payload: AttachmentPayload = {
-          kind: 'attachment',
-          name: file.name,
-          mimeType: file.type || 'application/octet-stream',
-          size: file.size,
-          dataUrl
-        };
-        const { encrypted, iv } = await encryptMessage(JSON.stringify(payload), user.id, selectedUser.id);
-
-        socket.emit('send_message', {
-          receiverId: selectedUser.id,
-          encryptedContent: encrypted,
-          iv
-        });
-      } catch (error) {
-        console.error('Failed to send attachment', error);
-        alert(`Failed to send file "${file.name}".`);
-      }
+    } finally {
+      setIsUploadingAttachments(false);
     }
   };
 
   const sendAudioBlob = async (blob: Blob) => {
-    if (!selectedUser || !socket || !user) return;
+    if (!selectedUser || !socket || !user || !token) return;
 
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
+      const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(`${BACKEND_URL}/api/upload/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
       });
+
+      const { fileId, name, mimeType, size } = response.data;
 
       const payload: AttachmentPayload = {
         kind: 'attachment',
-        name: `voice-${Date.now()}.webm`,
-        mimeType: blob.type || 'audio/webm',
-        size: blob.size,
-        dataUrl
+        name,
+        mimeType,
+        size,
+        dataUrl: `${BACKEND_URL}/api/upload/download/${fileId}`
       };
 
       const { encrypted, iv } = await encryptMessage(JSON.stringify(payload), user.id, selectedUser.id);
@@ -793,11 +825,13 @@ const Chat: React.FC = () => {
         encryptedContent: encrypted,
         iv
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to send audio', err);
-      alert('Failed to send audio message.');
+      const errorMsg = err.response?.data?.error || err.response?.data?.details || '';
+      alert(`Failed to send audio message. ${errorMsg}`);
     }
   };
+
 
   const startRecording = async () => {
     if (isRecording || !selectedUser) return;
@@ -1116,13 +1150,27 @@ const Chat: React.FC = () => {
     const isAudio = attachment.mimeType.startsWith('audio/');
 
     if (isAudio) {
-      return <AudioPlayer src={attachment.dataUrl} isSent={isSent} />;
+      return (
+        <SecureMedia src={attachment.dataUrl} token={token || ''} type="audio">
+          {({ localUrl, loading, error }) => {
+            if (loading) return <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>Loading audio...</div>;
+            if (error) return <div style={{ fontSize: '0.85rem', color: '#ff4d4f' }}>Failed to load audio.</div>;
+            return <AudioPlayer src={localUrl} isSent={isSent} />;
+          }}
+        </SecureMedia>
+      );
     }
 
     if (isImage) {
       return (
         <div className="message-attachment image-only-attachment">
-          <img src={attachment.dataUrl} alt={attachment.name} className="attachment-image" />
+          <SecureMedia
+            src={attachment.dataUrl}
+            token={token || ''}
+            type="image"
+            alt={attachment.name}
+            className="attachment-image"
+          />
         </div>
       );
     }
@@ -1130,23 +1178,40 @@ const Chat: React.FC = () => {
     if (isVideo) {
       return (
         <div className="message-attachment">
-          <video src={attachment.dataUrl} controls className="attachment-video" />
+          <SecureMedia
+            src={attachment.dataUrl}
+            token={token || ''}
+            type="video"
+            className="attachment-video"
+          />
         </div>
       );
     }
 
     return (
-      <div className="message-attachment">
-        <a href={attachment.dataUrl} download={attachment.name} className="attachment-file-link">
-          <span className="attachment-file-icon">
-            <FileText size={18} />
-          </span>
-          <span className="attachment-file-details">
-            <span className="attachment-file-name">{attachment.name}</span>
-            <span className="attachment-file-meta">{formatFileSize(attachment.size)} · {attachment.mimeType}</span>
-          </span>
-        </a>
-      </div>
+      <SecureMedia src={attachment.dataUrl} token={token || ''} type="download" fileName={attachment.name}>
+        {({ downloadFn, loading }) => (
+          <div className="message-attachment">
+            <button
+              type="button"
+              onClick={downloadFn}
+              className="attachment-file-link"
+              style={{ background: 'none', border: 'none', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', padding: 0, width: '100%' }}
+              disabled={loading}
+            >
+              <span className="attachment-file-icon">
+                <FileText size={18} />
+              </span>
+              <span className="attachment-file-details">
+                <span className="attachment-file-name" style={{ wordBreak: 'break-all' }}>{attachment.name}</span>
+                <span className="attachment-file-meta">
+                  {loading ? 'Downloading...' : `${formatFileSize(attachment.size)} · ${attachment.mimeType}`}
+                </span>
+              </span>
+            </button>
+          </div>
+        )}
+      </SecureMedia>
     );
   };
 
@@ -1517,9 +1582,11 @@ const Chat: React.FC = () => {
                   />
                   <button
                     type="button"
-                    className="input-pill-btn"
-                    aria-label="Send attachment"
-                    onClick={() => attachmentInputRef.current?.click()}
+                    className={`input-pill-btn ${isUploadingAttachments ? 'uploading' : ''}`}
+                    aria-label={isUploadingAttachments ? 'Sending files' : 'Send files'}
+                    title={isUploadingAttachments ? 'Sending files' : 'Send files'}
+                    onClick={openAttachmentPicker}
+                    disabled={isUploadingAttachments}
                   >
                     <Paperclip size={20} />
                   </button>

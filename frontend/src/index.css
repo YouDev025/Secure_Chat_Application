@@ -1281,7 +1281,25 @@ body.light-theme .message-bubble.sent .tg-audio-time {
 }
 
 .attachment-input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.input-pill-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.input-pill-btn.uploading svg {
+  animation: attachmentPulse 0.9s ease-in-out infinite;
+}
+
+@keyframes attachmentPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.86); }
 }
 
 /* Sidebar Profile Footer */

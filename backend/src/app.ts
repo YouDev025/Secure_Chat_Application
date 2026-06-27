@@ -21,7 +21,18 @@ app.get('/health', (req, res) => {
 
 // Import routes
 import authRoutes from './routes/auth';
+import uploadRoutes from './routes/upload';
+import fs from 'fs';
+import path from 'path';
+
 app.use('/api/auth', authRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Create backend/uploads folder if it doesn't exist
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

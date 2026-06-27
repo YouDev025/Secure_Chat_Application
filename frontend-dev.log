@@ -1,30 +1,9 @@
 
 > frontend@1.0.0 dev
-> vite --host 0.0.0.0
+> vite --host 127.0.0.1
 
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m2010[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1004[22m[2m[0m ms[22m
 
-  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
-  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.88.94:[1m5173[22m/[39m
-  [32m➜[39m  [1mNetwork[22m: [36mhttp://169.254.219.106:[1m5173[22m/[39m
-  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.8.101:[1m5173[22m/[39m
-  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.28.32.1:[1m5173[22m/[39m
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
-[2m11:13:50 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.tsx[22m
-[2m11:13:57 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Auth.tsx[22m
-[2m11:14:03 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
-[2m11:19:35 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Auth.tsx[22m
-[2m11:25:00 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Auth.tsx[22m
-[2m11:27:56 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
-[2m11:30:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:34:55 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:37:42 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:41:04 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:43:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:46:22 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:46:30 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
-[2m11:50:23 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/context/AuthContext.tsx[22m
-[2m11:50:46 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
-[2m11:50:58 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
-[2m11:56:09 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/Chat.tsx[22m
